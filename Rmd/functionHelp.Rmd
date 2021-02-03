@@ -1,0 +1,244 @@
+---
+title: "Function help"
+subtitle: "Obtain Simple Features from OSM"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+
+```
+
+```{r}
+library(osmdata)
+library(sf)
+```
+
+## Source
+
+## Open Street Map (OSM) {.tabset}
+
+<https://openstreepmap.org>
+
+Online street map consists of:
+
+-   Bounding Box (bbox): latitudes and longtitudes that crop out the area of geographic data user request.
+
+-   Features: the features on the map users are interested in. For example, administrative boundaries, parks, buildings, etc. (<https://wiki.openstreetmap.org/wiki/Map_Features>)
+
+### BBox
+
+```{r}
+osmdata::getbb("new taipei") -> newTaipeiBBox
+newTaipeiBBox
+```
+
+```{r}
+class(newTaipeiBBox)
+attributes(newTaipeiBBox)
+```
+
+-   bbox: matrix/array, with rownames of x/y, colnames of min/max
+
+### Features
+
+```{r}
+stringr::str_subset(osmdata::available_features(), "boundary|admin")
+```
+
+```{r}
+
+source("https://www.dropbox.com/s/8ndtvzqbdb4cb93/data_visulaization_pk.R?dl=1")
+osmdata::getbb("new taipei") -> newTaipeiBBox
+x <- opq(newTaipeiBBox) %>% 
+     add_osm_feature(key="admin_level", value="5") %>%
+     osmdata::osmdata_sf()
+
+x$osm_multipolygons %>%
+  osm_geom_rename() %>% ggplot()+geom_sf()
+
+
+```
+
+## Function help
+
+A good function help consists of
+
+-   A good function name (probably not a help writing problem)
+
+-   Title: short and eye-catching
+
+-   Argument: What kind of object? What does it do? Any attributes that are required?
+
+-   Return: What users expect to get? class? dimensions?
+
+-   Example: Action speaks louder than words.
+
+## Exercise {.tabset}
+
+Write a function called **osm_read_clip** and insert Roxygen function help explanation details.
+
+### Pseudocodes 1
+
+```{r}
+osm_read_clip <- function(){
+  # read clipboard from OSM bbox information from openstreetmap.org
+  clip_bbox <- 
+    {
+      clipr::read_clip()
+    }
+  # use stringr carefully rearrange your text clipboard into the format that can be the add_osm_feature's bbox input argument
+  bbox4osm <- 
+    {
+      
+    }
+  clipr::write_clip(bbox4osm)
+}
+```
+
+### Pseudocodes 2
+
+```{r}
+# read clipboard from OSM bbox information from openstreetmap.org
+  clip_bbox <- 
+    {
+      clipr::read_clip()
+    }
+```
+
+```{r}
+clip_bbox
+```
+
+```{r}
+# use stringr carefully rearrange your text clipboard into the format that can be the add_osm_feature's bbox input argument
+  bbox4osm <- 
+    {
+       legitimateClip <- subset(clip_bbox, clip_bbox!="") 
+       
+       names(legitimateClip) <- c("ymax", "xmin", "xmax", "ymin")
+       
+       clipMatrix <- 
+         rbind(
+          legitimateClip[c("xmin", "xmax")],
+          legitimateClip[c("ymin", "ymax")]
+        )
+       rownames(clipMatrix) <- c("x","y")
+       colnames(clipMatrix) <- c("min","max")
+       
+       clipMatrix
+    }
+```
+
+```{r}
+bbox4osm_deparsed <-
+  deparse(bbox4osm)
+```
+
+```{r}
+clipr::write_clip(bbox4osm_deparsed)
+```
+
+### Test Function
+
+```{r osm_read_bboxclip}
+osm_read_bboxclip <- function()
+{
+
+  # read clipboard from OSM bbox information from openstreetmap.org
+  clip_bbox <- {
+    clipr::read_clip()
+  }
+
+  # use stringr carefully rearrange your text clipboard into the format that can be the add_osm_feature's bbox input argument
+  bbox4osm <- {
+    legitimateClip <- 
+      as.numeric(stringr::str_subset(clip_bbox,"[0-9]+.[0-9]*"))
+
+    names(legitimateClip) <- c("ymax", "xmin", "xmax", "ymin")
+
+    clipMatrix <-
+      rbind(
+        legitimateClip[c("xmin", "xmax")],
+        legitimateClip[c("ymin", "ymax")]
+      )
+    rownames(clipMatrix) <- c("x", "y")
+    colnames(clipMatrix) <- c("min", "max")
+
+    clipMatrix
+  }
+
+  bbox4osm_deparsed <-
+    deparse(bbox4osm)
+
+  clipr::write_clip(bbox4osm_deparsed)
+}
+```
+
+```{r}
+osm_read_bboxclip()
+```
+
+```{r}
+targetBbox <- structure(c(121.5547, 25.0494, 121.5907, 25.0783), .Dim = c(2L, 
+2L), .Dimnames = list(c("x", "y"), c("min", "max")))
+```
+
+```{r}
+stringr::str_subset(
+  osmdata::available_features(), 
+  stringr::regex(
+    "cycle", ignore_case = T
+  )
+)
+```
+
+```{r}
+osmdata::opq(targetBbox) %>%
+  osmdata::add_osm_feature(
+    key='highway',
+    value='cycleway'
+   ) %>%
+  osmdata::osmdata_sf() -> minShengNeighborhood
+```
+
+```{r}
+ggplot()+
+  geom_sf(data = minShengNeighborhood$osm_lines)
+```
+
+## OSM procedure encapsulated
+
+
+```{r}
+osm <- OSM()
+```
+
+```{r}
+osm$check$browse_osmWeb()
+```
+
+```{r}
+osm$buildfrom_clip()
+```
+
+```{r}
+undebug(osm$check$find_features)
+osm$check$find_features("university") # none
+osm$check$browse_features() # visit website
+osm$check$find_features("amenity") # yes
+```
+
+```{r }
+osm$buildfrom_clip()
+osm$query()
+osm$add_features(
+  key="amenity", value="university"
+)
+osm$export_sf() -> ntpu_sf
+ggplot()+
+  geom_sf(
+    data=ntpu_sf$osm_multipolygons %>% 
+      osm_rename()
+  )
+```

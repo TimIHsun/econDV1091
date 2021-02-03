@@ -1,0 +1,293 @@
+---
+title: "Encapsulation"
+subtitle: "Importing shp format data"
+drake_cache: ".chartTaiwanMap"
+output: html_document
+---
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+```
+
+```{r echo=F, eval=T}
+library(klippy)
+klippy::klippy()
+```
+
+------------------------------------------------------------------------
+
+## makecondition
+
+```{r makecondition}
+library(sf)
+
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(econDV)
+```
+
+## Encapsulation {.tabset}
+
+### Blue print
+
+```{r}
+
+# data import
+{
+  
+}
+# graph
+{
+  
+}
+# simplify
+{
+  
+}
+# crop
+{
+  
+}
+# zoom
+{
+  
+}
+# export
+{
+  
+}
+# restore (Throw in for safety)
+{
+  
+}
+```
+
+### Pseudocode
+
+Prepare
+
+-   [**ONLY ONE**]{.alert-success} object to save your result.
+
+-   If the result involves with mutiple things, save them within that **ONE** object [**using `$` or `[[resultName]]` operation**]{.alert-success}.
+
+::: {.alert .alert-info}
+If result presents an action for users decide to take, it has to be an **function**.
+:::
+
+```{r}
+# Declare a capsule (# type to be determined)
+geoD <-
+# data import
+geoD$.data <- 
+{
+  
+}
+# graph
+geoD$graph <- function()
+{
+  
+}
+# simplify
+geoD$simplify <- function()
+{
+  
+}
+# crop
+geoD$crop <- function()
+{
+  
+}
+# zoom
+geoD$zoomIn <- function()
+{
+  
+}
+geoD$zoomOut <- function()
+{
+  
+}
+# export
+geoD$export <- function()  
+{
+  
+}
+# restore (Throw in for safety)
+geoD$restore <- function()
+{
+  
+}
+```
+
+### Pseudocode 2 (Encapsulation)
+
+Save all the data you need and actions (i.e. *function*) you need [**within the same object**]{.alert-success} whose class has to be [**environment**]{.alert-success}.
+
+-   When retrieving any object value, or
+
+-   When saving any object value,
+
+**ALWAYS** refers to its relevant **environment** except intermediate step object values.
+
+```{r}
+dataSource <- "/Users/martinl/Dropbox/github-data/109-1-econDV/直轄市、縣市界線(TWD97經緯度)SHP格式/COUNTY_MOI_1090820.shp"
+
+# Declare a capsule (# type to be determined)
+geoD <- new.env()
+# data import
+geoD$.data <- 
+{
+  sf::st_read(dataSource)  
+}
+# graph
+geoD$graph <- function()
+{
+  require(dplyr); require(ggplot2)
+  geoD$.data %>%
+    ggplot()+geom_sf() ->
+    geoD$.graph
+  
+  geoD$.graph
+}
+# simplify
+geoD$simplify <- function()
+{
+  rmapshaper::ms_simplify(geoD$.data) -> geoD$.data
+}
+# crop
+geoD$crop <- function(...)
+{
+  argList <- list(...)
+  sf::st_crop(
+    geoD$.data,
+    unlist(argList)
+  ) -> geoD$.data
+}
+# zoom
+geoD$zoomIn <- function()
+{
+  
+}
+geoD$zoomOut <- function()
+{
+  
+}
+# export
+geoD$exportData <- function()  
+{
+  geoD$.data
+}
+# restore (Throw in for safety)
+geoD$restore <- function()
+{
+  
+}
+```
+
+### Test 2
+
+```{r}
+# initial data size
+size0 <- object.size(geoD$.data)
+# initial graphing
+geoD$graph()
+# data too much detail
+geoD$simplify()
+geoD$graph()
+# faster graphing, but want main island
+geoD$crop(
+ xmin=120, xmax=123,
+  ymin=22, ymax=26)
+geoD$graph()
+geoD$exportData() -> finalGeoData
+sizeFinal <- object.size(finalGeoData)
+```
+
+### Function prototype
+
+```{r}
+GeoData_shp <- function(shpDataSource) {
+  assertthat::assert_that(
+    stringr::str_detect(
+      basename(shpDataSource),
+      stringr::regex(
+        "shp$",
+        ignore_case = T
+      )
+    ),
+    msg = "The data source is not a shp data."
+  )
+  # Declare a capsule (# type to be determined)
+  geoD <- new.env()
+  # data import
+  geoD$.data <- {
+    sf::st_read(shpDataSource)
+  }
+  # graph
+  geoD$graph <- function() {
+    require(dplyr)
+    require(ggplot2)
+    geoD$.data %>%
+      ggplot() +
+      geom_sf() ->
+    geoD$.graph
+    geoD$.graph
+  }
+  # simplify
+  geoD$simplify <- function() {
+    rmapshaper::ms_simplify(geoD$.data) -> geoD$.data
+  }
+  # crop
+  geoD$crop <- function(...) {
+    argList <- list(...)
+    sf::st_crop(
+      geoD$.data,
+      unlist(argList)
+    ) -> geoD$.data
+  }
+  # zoom
+  geoD$zoomIn <- function() {
+
+  }
+  geoD$zoomOut <- function() {
+
+  }
+  # export
+  geoD$exportData <- function() {
+    geoD$.data
+  }
+  # restore (Throw in for safety)
+  geoD$restore <- function() {
+
+  }
+  return(geoD)
+}
+```
+
+### Function test
+
+```{r}
+dataSource <- "/Users/martinl/Dropbox/github-data/109-1-econDV/直轄市、縣市界線(TWD97經緯度)SHP格式/COUNTY_MOI_1090820.shp"
+
+geoD_beta <- GeoData_shp(dataSource)
+
+# data too much detail
+geoD_beta$simplify()
+geoD_beta$graph()
+# faster graphing, but want main island
+geoD_beta$crop(
+ xmin=120, xmax=123,
+  ymin=22, ymax=26)
+geoD_beta$graph()
+geoD_beta$exportData() -> finalGeoData
+```
+
+::: {.alert .alert-info}
+GeoData_shp generates an **instance** (情境), *geoD_beta*, whose acting results depends on (1) an **external state** (*dataSource*, like 'exogenous shock' in Economics term) and (2) **dynamic states** (*\$.data*, like 'state variable' in Economics term), and (3) the action and state evolution are all kept within the instance itself (which is called **Encapsulation**(封包設計)).
+
+Instance generator is usually named with *Capital* starting letter in contrast to an instance whose starting letter is in *small case*.
+:::
+
+## Exercise
+
+Complete **GeoData_shp** instance initiator.

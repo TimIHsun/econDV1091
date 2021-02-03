@@ -1,0 +1,47 @@
+---
+title: "Simple feature from SVG"
+subtitle: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## SVG
+
+```{r}
+remotes::install_github("sjp/grConvert")
+
+```
+
+
+```{r}
+grImport2::readPicture("/Users/martinl/Downloads/scotty.svg") -> svg0
+```
+
+
+```{r}
+magick::image_read(
+  "/Users/martinl/Downloads/scotty.svg"
+) -> scotty
+```
+
+
+```{r}
+xml2::read_xml("/Users/martinl/Downloads/svgImport2sf.svg") -> svgSource
+xml2::as_list(svgSource) -> svghtml
+
+```
+
+```{r}
+xml2::read_html('
+<path d="M 134.172 619.938 L 174.322 651.644 L 158.986 702.947 L 109.358 702.947 L 94.022 651.644 Z" style="fill: rgb(216, 216, 216);" transform="matrix(-0.101887, -0.994796, 0.994796, -0.101887, -560.389755, 351.461249)"></path>'
+) -> n_gon
+n_gon <- xml2::as_list(n_gon)
+parse(attr(n_gon$html$body$path,"transform")
+
+attributes(n_gon)
+attr(n_gon, "transform")
+```
+

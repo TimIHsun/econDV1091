@@ -1,0 +1,32 @@
+---
+title: "Setup Package Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## RStudio setup
+
+ * subdirectory: any folder, but cloud synced one. 
+ 
+ * Build tab -> Configure Build Tools... :
+  * check **generate documentation with Roxygen**.
+  
+ * Put your R script underneath /R folder.
+ 
+## Where to put your functions:
+
+  * Inside existing .R file; or
+  
+  * Create a new .R file.
+  
+> each .R file represents a collection of functions that are to service a specific category of service or task.
+
+  * Theme design: theme.R
+  * Geoem_line design: geom_line.R
+  
+## Github.com via Github Desktop
+
+  * File -> Add Local Repo...
