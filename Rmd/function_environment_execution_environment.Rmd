@@ -1,0 +1,104 @@
+---
+title: "Function and Execution Environments"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Function environment and Execution Environment
+
+```{r}
+greeting <- function(username){
+  cat("Hi, ", username)
+}
+```
+
+-   Function environment: where **greeting** resides.
+
+-   Execution environment: the ephemeral environment when **greeting** function is called.
+
+> **call** is an expression when a function's input arguments' values are supplied so that it is ready to go.
+
+```{r}
+greeting # not a call
+greeting("John") # is a call
+```
+
+> As we can see that function class object can have different statuses, that is different statuses are called different **mode**s. When object has only static status, its class and mode are the same.
+
+### Execution Environment (EE)
+
+#### Falling into the rabbit hole:
+
+```{r}
+greeting <- function(username){
+  browser() # this is the rabbit hole we create to lead us to the execution environment world.
+  cat("Hi, ", username)
+}
+
+```
+
+```{r}
+greeting("John")
+
+```
+
+### Function environment
+
+#### When things are missing in EE
+
+```{r}
+greeting <- function(username){
+  cat("Hi, ", username,". I live in ", location, ". ")
+}
+```
+
+```{r}
+greeting("John")
+```
+
+```{r}
+debug(greeting) # another way to create the rabbit hole.
+greeting("John")
+```
+
+```{r}
+location <- "Sanxia"
+greeting("John")
+
+```
+
+> **location** does not have to exist when the function is created---only needed when the function is called (**Lazy Evaluation**).
+
+> **Exist** mean exist in **Functional Environment** (FE) that is where **greeting** resides, or exist in Execution Environment (EE).
+>
+> -   EE -\> FE
+
+### Scoping rule
+
+#### Genealogy
+
+When something is missing in an environment, how is the program looking for the missing piece? The process of missing piece looking is called **scoping**.
+
+```{r}
+greetingPersonFromSameLocation <- function(username){
+  browser()
+  greeting2 <- function(username){
+    browser()
+    cat("Hi, ", username,". I live in ", location, ". ")
+  }
+  greeting2(username)
+}
+```
+
+-   In R, the scoping rule is based on the genealogy (族譜）of an environment, with an additional restriction: only look at preceding environments, NOT at the succeeding environments.
+
+-   Use `parent.env(an environment)` to look for the parent environment of an environment.
+
+```{r}
+location <- "Taipei"
+debug(greetingPersonFromSameLocation)
+greetingPersonFromSameLocation("John")
+```
