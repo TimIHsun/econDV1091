@@ -32,8 +32,11 @@ library(tidyr)
 library(stringr)
 library(googledrive)
 library(readr)
+# library(ggmap)
+# library(osmdata)
 library(ggplot2)
 library(econDV)
+# library(sf)
 econDV::setup_chinese(need2Knit = F)
 rprojroot::is_rstudio_project -> .pj
 .pj$make_fix_file() -> .root
