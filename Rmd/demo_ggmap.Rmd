@@ -1,0 +1,117 @@
+---
+title: "台灣景氣循環"
+drake_cache: ".chart1_sunny"
+output: html_document
+params:
+  key: "公Aa-Ⅳ-1" 
+  memberNames: ["Mary", "cook"]
+  memberIds: ["410888292", "410772938"] 
+  imgPreName: "taiwanEconomicsGrowth.svg" 
+  imgPostName: "" 
+---
+
+key請由課綱選：
+新課綱：<https://docs.google.com/document/d/1o8UQIpy6GFqCgfUxc47fqyAPuEYrk3FLd7bB1EhYMVg>
+
+  * 圖片一定要有Title, subtitle, 及資料來源。
+
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+library(drake)
+library(econDV)
+library(dplyr)
+
+```
+
+## makecondition
+
+```{r makecondition}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+
+xfun::download_file("https://www.dropbox.com/s/7b3nbgfx5bgft8g/drake_annotationmaps.Rdata?dl=1")
+load("drake_annotationmaps.Rdata")
+```
+
+```{r}
+library(ggmap)
+# register_google(
+#   key="AJ...XQ",
+#   write=TRUE
+# )
+```
+
+```{r}
+newTaipeiBBox2 <- c(left = 121.3, bottom = 24.7, right = 122, top = 25.3)
+get_map(newTaipeiBBox2) -> raster_newTaipei
+```
+
+```{r}
+ggmap(raster_newTaipei) -> gg_newTaipei
+```
+
+```{r}
+newTaipeiBBox2 %>%
+  get_map(maptype="roadmap") %>%
+  ggmap()
+```
+
+```{r}
+newTaipeiBBox2 %>%
+  get_map(maptype="toner-lite") %>%
+  ggmap()
+```
+
+```{r}
+drake$source_plan()
+drake$makePlan()
+drake$loadTarget$dsf_newTaipei()
+```
+
+
+```{r}
+xfun::download_file("https://www.dropbox.com/s/8ndtvzqbdb4cb93/data_visulaization_pk.R?dl=1")
+source("data_visulaization_pk.R", encoding = "UTF-8")
+library(sf)
+
+gg_newTaipei+
+  geom_sf(
+    data=dsf_newTaipei$osm_multipolygons %>% osm_geom_rename, 
+    inherit.aes = FALSE,
+    alpha=0.3, fill="aliceblue"
+  )+
+  theme_void() -> ggmap_osm
+```
+
+```{r}
+ggmap_osm
+```
+
+
+```{r}
+newTaipeiBBox2 %>%
+  get_map(maptype="toner-lite") %>%
+  ggmap() +
+  geom_sf(
+    data=dsf_newTaipei$osm_multipolygons %>% osm_geom_rename, 
+    inherit.aes = FALSE,
+    alpha=0.3, fill="aliceblue"
+  )+
+  theme_void() 
+```
+

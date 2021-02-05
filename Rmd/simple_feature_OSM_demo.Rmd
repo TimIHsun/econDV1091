@@ -1,0 +1,205 @@
+---
+title: "台灣景氣循環"
+drake_cache: ".chart1_sunny"
+output: html_document
+params:
+  key: "公Aa-Ⅳ-1" 
+  memberNames: ["Mary", "cook"]
+  memberIds: ["410888292", "410772938"] 
+  imgPreName: "taiwanEconomicsGrowth.svg" 
+  imgPostName: "" 
+---
+
+key請由課綱選：
+新課綱：<https://docs.google.com/document/d/1o8UQIpy6GFqCgfUxc47fqyAPuEYrk3FLd7bB1EhYMVg>
+
+  * 圖片一定要有Title, subtitle, 及資料來源。
+
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+library(drake)
+library(econDV)
+library(dplyr)
+
+```
+
+## makecondition
+
+```{r makecondition}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+# xfun::download_file("https://www.dropbox.com/s/7b3nbgfx5bgft8g/drake_annotationmaps.Rdata?dl=1")
+# load("drake_annotationmaps.Rdata")
+
+xfun::download_file("https://www.dropbox.com/s/8ndtvzqbdb4cb93/data_visulaization_pk.R?dl=1")
+source("data_visulaization_pk.R", encoding = "UTF-8")
+```
+
+```{r}
+library(osmdata)
+```
+
+```{r}
+osmdata::getbb("new taipei") -> newTaipeiBBox
+newTaipeiBBox
+```
+```{r}
+newTaipeiBBox <- c(xmin=121.28263, xmax=122.00640, ymin=24.67316, ymax=25.29974)
+```
+
+```{r}
+ntputBBox <- c(xmin=121.3621,
+               xmax=121.3740,
+               ymin=24.9383,
+               ymax=24.9484)
+```
+
+
+Features
+
+### OPQ instance
+
+```{r}
+opq_newTaipei <- 
+  opq(newTaipeiBBox)
+```
+
+```{r}
+opq_ntpu <- 
+  opq(ntputBBox)
+```
+
+### add features
+
+
+```{r}
+osmdata::available_features()
+```
+
+```{r}
+stringr::str_subset(osmdata::available_features(), "boundary|admin")
+```
+
+  * admin_leve:1-11
+  
+  * boundary:administrative
+
+
+
+```{r}
+osmdata::add_osm_feature(
+  opq_newTaipei,
+  "admin_level", "5"
+) -> osmTaipei
+```
+
+```{r}
+osmdata_sf(osmTaipei) -> dsf_newTaipei
+```
+
+```{r}
+dsf_newTaipei <- {
+  
+  osmdata::getbb("new taipei") -> bbox_ntp
+  
+  osmdata::opq(bbox_ntp) -> 
+    opq_ntp
+
+  osmdata::add_osm_feature(
+    opq_ntp,
+    key="admin_level",
+    value="5"
+  )  -> request_ntp
+
+  osmdata::osmdata_sf(
+    request_ntp
+  )
+}
+```
+
+```{r}
+dsf_newTaipei <- {
+  
+  osmdata::getbb("new taipei") %>%
+  osmdata::opq() %>%
+  osmdata::add_osm_feature(
+    key="admin_level",
+    value="5"
+  )  %>%
+  osmdata::osmdata_sf()
+}
+
+```
+
+```{r}
+dsf_newTaipei$osm_points %>%
+  filter(
+    !is.na(name)
+  ) %>%
+  ggplot()+geom_sf()
+```
+
+```{r}
+dsf_newTaipei$osm_multipolygons %>%
+  osm_geom_rename() -> dsf_newTaipei2
+```
+
+
+```{r}
+dsf_newTaipei2 %>%
+  ggplot()+geom_sf()
+```
+
+```{r}
+dsf_newTaipei2 %>%
+  filter(
+    stringr::str_detect(name, "土|峽|板")
+  ) %>%
+  ggplot()+geom_sf()
+```
+
+### 國立臺北大學
+
+```{r opq_ntpu}
+opq_ntpu = {
+  opq(c(xmin=121.36, ymin=24.94, xmax=121.38, ymax=24.95))
+}
+```
+
+```{r}
+dsf_ntpu <- {
+  
+  opq_ntpu %>%
+    add_osm_feature(
+      key = "building",
+      value="university"
+    ) %>%
+    add_osm_feature(
+      key="highway", value="residential"
+    ) %>%
+    osmdata_sf()
+  
+  
+}
+```
+
+```{r}
+dsf_ntpu$osm_polygons %>%
+  ggplot()+geom_sf()
+```
+

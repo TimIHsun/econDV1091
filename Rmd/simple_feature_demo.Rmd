@@ -1,0 +1,103 @@
+---
+title: "Simple feature demo"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+
+xfun::download_file("https://www.dropbox.com/s/7b3nbgfx5bgft8g/drake_annotationmaps.Rdata?dl=1")
+load("drake_annotationmaps.Rdata")
+```
+
+
+```{r}
+library(sf)
+```
+
+```{r}
+dsf_taiwan <- 
+  sf::read_sf("/Users/martinl/Downloads/mapdata202008310842 (1)/COUNTY_MOI_1090820.shp")
+```
+
+```{r}
+dsf_taiwan %>%
+  ggplot() +
+  geom_sf()
+```
+
+```{r}
+dsf_taiwan %>%
+  rmapshaper::ms_simplify() -> dsf_taiwan_simplify
+```
+
+```{r}
+object.size(dsf_taiwan_simplify)
+```
+
+```{r}
+dsf_taiwan_simplify %>%
+  ggplot()+geom_sf()
+```
+```{r}
+dsf_taiwan_simplify
+```
+
+```{r}
+dsf_taiwan_simplify %>%
+  st_crop(c(xmin=119,xmax=122,ymin=22,ymax=25.8)) -> dsf_taiwanCropped
+```
+
+```{r}
+dsf_taiwanCropped %>%
+  ggplot()+geom_sf()
+```
+
+```{r}
+dsf_taiwanCropped %>%
+  filter(
+    stringr::str_detect(COUNTYNAME, "宜|北|基") 
+  ) %>%
+  ggplot() +
+  geom_sf()
+```
+
+```{r}
+dsf_taiwanCropped$geometry[[1]]
+```
+
+```{r}
+dsf_taiwanCropped %>%
+  filter(
+    stringr::str_detect(COUNTYNAME, "宜|北|基") 
+  ) %>%
+  ggplot() +
+  geom_sf(
+    aes(fill=COUNTYNAME),
+    color="white", size=0.2
+  )+
+  colorspace::scale_fill_discrete_qualitative(
+    name="縣市"
+  )+
+  theme_void()
+```
+
