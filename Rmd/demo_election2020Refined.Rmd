@@ -1,0 +1,212 @@
+---
+title: "台灣景氣循環"
+drake_cache: ".chart1_sunny"
+output: html_document
+params:
+  key: "公Aa-Ⅳ-1" 
+  memberNames: ["Mary", "cook"]
+  memberIds: ["410888292", "410772938"] 
+  imgPreName: "taiwanEconomicsGrowth.svg" 
+  imgPostName: "" 
+---
+
+key請由課綱選：
+新課綱：<https://docs.google.com/document/d/1o8UQIpy6GFqCgfUxc47fqyAPuEYrk3FLd7bB1EhYMVg>
+
+  * 圖片一定要有Title, subtitle, 及資料來源。
+
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+library(drake)
+library(econDV)
+library(dplyr)
+
+```
+
+## makecondition
+
+```{r makecondition}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+
+xfun::download_file("https://www.dropbox.com/s/7b3nbgfx5bgft8g/drake_annotationmaps.Rdata?dl=1")
+load("drake_annotationmaps.Rdata")
+```
+
+```{r}
+drake$.updateCache()
+drake$source_plan()
+drake$makePlan()
+
+getwd() # working directory
+```
+
+```{r}
+scales::rescale(
+  dpp,
+  from=c(0,1),
+  to=c(-1,1)
+)
+
+```
+
+
+```{r}
+drake$loadTarget$electionData0()
+```
+
+```{r}
+dppRange =  round(range(electionData0$dpp),1)
+```
+
+```{r}
+dppRange
+```
+
+```{r}
+rescale(
+  dpp,
+  from=c(0.3, 0.7),
+  to=c(-1,1)
+  
+)
+```
+
+```{r}
+drake$loadTarget$list_ranges()
+electionData0 %>%
+    mutate(
+      dpp_rescaled=
+        scales::rescale(
+          electionData0$dpp,
+          from=list_ranges$fromRange,
+          to=list_ranges$toRange)
+        ) -> electionData
+```
+
+```{r}
+colorspace::choose_palette(gui="shiny")
+```
+
+```{r}
+colorspace::diverging_hcl(n = 12, h = c(247, 120), c = 100, l = c(30, 90), power = 1.5, register = "kmt_dpp")
+```
+
+```{r}
+scale_election = {
+
+  
+  colorspace::scale_fill_continuous_diverging(
+    palette="kmt_dpp") -> scale_fill_election 
+
+
+  scale_fill_election
+}
+```
+
+```{r}
+ggsf_election <- {
+  ggplot()+
+    geom_sf(
+      data=electionData,
+      mapping=aes(fill=dpp_rescaled), size=0.2, color="white",
+      inherit.aes = FALSE
+    )+
+    scale_election+
+    theme_void()
+}
+
+ggsf_election
+```
+
+```{r}
+drake$loadTarget$ggmap_newTaipeiTonerLite()
+gg_electionComplete <- 
+  ggmap_newTaipeiTonerLite +
+    geom_sf(
+      data = electionData,
+      mapping = aes(fill = dpp_rescaled), size = 0.2, color = "white", alpha=0.7, 
+      inherit.aes = FALSE
+    ) +
+    scale_election +
+    theme_void()
+```
+
+```{r}
+gg_electionComplete
+```
+```{r}
+breaksPal = seq(
+    from=list_ranges$toRange[[1]],
+    to=list_ranges$toRange[[2]],
+    length.out=5
+  )
+breaksPal
+```
+
+```{r}
+labelsPal = seq(
+    from=list_ranges$fromRange[[1]],
+    to=list_ranges$fromRange[[2]],
+    length.out=5
+  )
+labelsPal
+```
+```{r}
+scale_election = {
+  
+  breaksPal = seq(
+    from=list_ranges$toRange[[1]],
+    to=list_ranges$toRange[[2]],
+    length.out=5
+  )
+
+  labelsPal = seq(
+    from=list_ranges$fromRange[[1]],
+    to=list_ranges$fromRange[[2]],
+    length.out=5
+  )
+  
+  colorspace::scale_fill_continuous_diverging(
+    palette="kmt_dpp") -> scale_fill_election 
+
+  scale_fill_election$breaks = breaksPal
+  scale_fill_election$labels = labelsPal
+  scale_fill_election$name = "民進黨得票率"
+  
+  scale_fill_election
+}
+```
+
+```{r}
+gg_electionComplete <- 
+  ggmap_newTaipeiTonerLite +
+    geom_sf(
+      data = electionData,
+      mapping = aes(fill = dpp_rescaled), size = 0.2, color = "white", alpha=0.7, 
+      inherit.aes = FALSE
+    ) +
+    scale_election +
+    theme_void()
+```
+
+```{r}
+gg_electionComplete
+```
+
+
