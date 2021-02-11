@@ -1,0 +1,161 @@
+---
+title: "台灣景氣循環"
+drake_cache: ".chart1_sunny"
+output: html_document
+params:
+  key: "公Aa-Ⅳ-1" 
+  memberNames: ["Mary", "cook"]
+  memberIds: ["410888292", "410772938"] 
+  imgPreName: "taiwanEconomicsGrowth.svg" 
+  imgPostName: "" 
+---
+
+key請由課綱選：
+新課綱：<https://docs.google.com/document/d/1o8UQIpy6GFqCgfUxc47fqyAPuEYrk3FLd7bB1EhYMVg>
+
+  * 圖片一定要有Title, subtitle, 及資料來源。
+
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+library(drake)
+library(econDV)
+library(dplyr)
+
+```
+
+## makecondition
+
+```{r makecondition}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+xfun::download_file("https://www.dropbox.com/s/7b3nbgfx5bgft8g/drake_annotationmaps.Rdata?dl=1")
+load("drake_annotationmaps.Rdata")
+drake_map <- drake
+xfun::download_file("https://www.dropbox.com/s/v8rchkn63fzgjj3/drake_facet.Rdata?dl=1")
+load("drake_facet.Rdata")
+drake_facet <- drake
+xfun::download_file("https://www.dropbox.com/s/apmooy1p0d54d7d/drake_grid.Rdata?dl=1")
+load("drake_grid.Rdata")
+drake_grid <- drake
+```
+
+```{r}
+drake_map$.updateCache()
+drake_map$source_plan()
+drake_map$makePlan()
+```
+
+```{r}
+drake_facet$.updateCache()
+drake_facet$source_plan()
+drake_facet$makePlan()
+```
+
+```{r}
+drake_grid$.updateCache()
+drake_grid$source_plan()
+drake_grid$makePlan()
+```
+
+
+
+```{r}
+drake_grid$loadTarget$ggGrid_electionMap()
+ggGrid_electionMap %>% gridExtra::grid.arrange()
+```
+
+```{r}
+drake_grid$loadTarget$dsf_newTaipeiDPP2()
+View(dsf_newTaipeiDPP2)
+```
+
+```{r}
+dsf_newTaipeiDPP2 %>%
+  ggplot() + geom_sf() +
+  geom_sf_text(
+    aes(
+      label=shortname
+    ), size=2
+  ) -> gg_newTaipei
+gg_newTaipei
+```
+
+```{r}
+drake_grid$loadTarget$dsf_newTaipeiSplit()
+```
+
+
+```{r}
+ggplot(
+    data=dsf_newTaipeiDPP2
+  ) + geom_sf(
+    color="white"
+  )+
+ geom_sf_text(
+    data=dsf_newTaipeiSplit$notClustered,
+    aes(
+      label=shortname
+    ), size=2
+  ) -> gg_newTaipei2
+gg_newTaipei2
+```
+
+```{r}
+gg_newTaipei2 + 
+  geom_sf_text(
+    data=dsf_newTaipeiSplit$clustered,
+    aes(
+      label=shortname
+    ), size=1.5
+  )+theme_void() -> gg_newTaipeiLabeled
+gg_newTaipeiLabeled
+```
+```{r}
+drake_map$loadTarget$ggsf_election()
+ggsf_election
+```
+
+```{r}
+ggsf_election+
+  theme(
+    legend.title = element_blank(),
+    legend.key.width = unit(5,"points"),
+    legend.key.height = unit(10,"points"),
+    legend.position = c(0.85, 0.2)
+  ) -> ggsf_electionRefined
+ggsf_electionRefined
+```
+
+```{r}
+gridExtra::grid.arrange(
+  ggsf_electionRefined,
+  gg_newTaipeiLabeled,
+  nrow=1,
+  top="民進黨2020總統大選新北市得票率"
+) -> ggGrid_electionMap
+```
+```{r}
+ggGrid_electionMap
+gridExtra::grid.arrange(ggGrid_electionMap)
+```
+
+```{r}
+ggsave(ggGrid_electionMap, file="ggGrid.svg")
+econDV::svgOpen("ggGrid.svg")
+```
+

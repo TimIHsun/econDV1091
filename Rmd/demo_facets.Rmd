@@ -1,0 +1,243 @@
+---
+title: "台灣景氣循環"
+drake_cache: ".chart1_sunny"
+output: html_document
+params:
+  key: "公Aa-Ⅳ-1" 
+  memberNames: ["Mary", "cook"]
+  memberIds: ["410888292", "410772938"] 
+  imgPreName: "taiwanEconomicsGrowth.svg" 
+  imgPostName: "" 
+---
+
+key請由課綱選：
+新課綱：<https://docs.google.com/document/d/1o8UQIpy6GFqCgfUxc47fqyAPuEYrk3FLd7bB1EhYMVg>
+
+  * 圖片一定要有Title, subtitle, 及資料來源。
+
+
+```{r setup, include=FALSE, drake=F}
+knitr::opts_chunk$set(echo = TRUE, eval=F)
+library(drake)
+library(econDV)
+library(dplyr)
+
+```
+
+## makecondition
+
+```{r makecondition}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(googledrive)
+library(readr)
+library(ggplot2)
+library(econDV)
+econDV::setup_chinese(need2Knit = F)
+rprojroot::is_rstudio_project -> .pj
+.pj$make_fix_file() -> .root
+
+imageFolder <- file.path(.root(),"img")
+dataFolder <- file.path(.root(),"data")
+
+if(!dir.exists(imageFolder)) dir.create(imageFolder)
+if(!dir.exists(dataFolder)) dir.create(dataFolder)
+
+xfun::download_file("https://www.dropbox.com/s/v8rchkn63fzgjj3/drake_facet.Rdata?dl=1")
+load("drake_facet.Rdata")
+```
+
+```{r}
+drake$.updateCache()
+drake$source_plan()
+drake$makePlan()
+```
+
+
+```{r}
+drake$eval_makecondition()
+```
+
+```{r}
+# 基本設計
+ggByCounty <- function(Xdata){
+  ggplot(
+    data=Xdata
+  ) +
+  geom_col(
+    aes(
+      x=號次, y=得票率, fill=號次
+    )
+  )
+}
+df_byCounty %>%
+  filter(地區=="新北市") %>%
+  ggByCounty()
+```
+
+
+```{r}
+df_byCounty %>%
+  ggByCounty() +
+  facet_wrap(
+    vars(地區)
+  )
+```
+
+```{r}
+View(predElection2020)
+```
+
+```{r}
+drake$loadTarget$df_byCounty()
+View(df_byCounty)
+```
+
+```{r}
+drake$loadTarget$electionDataMerged()
+View(electionDataMerged)
+```
+
+```{r}
+ggfacet_base_function = function(Xdata){
+  ggplot(
+    data=Xdata,
+    mapping=aes(
+        x=year,
+        y=得票率
+      )
+    ) +
+    geom_point() +
+    geom_line() +
+    scale_x_continuous(
+      breaks=c(2012, 2016, 2020),
+      labels=c(2012, 2016, 2020)
+    )
+}
+```
+
+```{r}
+electionDataMerged %>%
+  ggfacet_base_function() +
+  facet_grid(
+    rows=vars(地區),
+    cols=vars(party)
+  )
+```
+
+```{r}
+drake$loadTarget$electionKmtWithRegions()
+View(electionKmtWithRegions)
+```
+
+
+```{r}
+electionDataMerged %>%
+  filter(
+    party=="kmt"
+  ) %>%
+  mutate(
+    region =
+      dplyr::case_when(
+        stringr::str_detect(地區,"[北基竹桃宜]") ~ "北部",
+        stringr::str_detect(地區,"[中苗彰投雲]") ~ "中部",
+        stringr::str_detect(地區,"[高南嘉屏澎]") ~ "南部",
+        TRUE ~ "東部" # 其他
+      )
+  ) -> electionKmtWithRegions
+```
+
+```{r}
+View(electionKmtWithRegions)
+```
+
+```{r}
+drake$loadTarget$predElection2020rev()
+```
+
+```{r}
+electionDataMerged2020 <- {
+  predElection2020rev$year = 2020
+  predElection2012rev$year = 2012
+  predElection2016rev$year = 2016
+  
+  electionDataMerged <- 
+    dplyr::bind_rows(
+      predElection2012rev, predElection2016rev, predElection2020rev
+    )
+  electionDataMerged$姓名 %>% factor() ->
+    electionDataMerged$party
+  levels(electionDataMerged$party) <- c("pfp", "kmt", "dpp", "kmt", "kmt")
+  
+  electionDataMerged %>%
+    mutate(
+      地區 = dplyr::if_else(地區=="桃園縣", "桃園市", 地區)) ->
+    electionDataMerged
+  
+  # electionDataMerged %>%
+  #   filter(
+  #     party != "pfp",
+  #     stringr::str_detect(地區,"北|桃|基|竹")
+  #   ) -> electionDataMerged
+  
+  electionDataMerged %>%
+    filter(
+      year==2020
+    )
+
+  
+  electionDataMerged
+}
+```
+
+```{r}
+View(electionDataMerged2020)
+```
+
+```{r}
+electionDataMerged2020 %>%
+  filter(
+    party=="kmt"
+  ) %>%
+  mutate(
+    region =
+      dplyr::case_when(
+        stringr::str_detect(地區,"[北基竹桃宜]") ~ "北部",
+        stringr::str_detect(地區,"[中苗彰投雲]") ~ "中部",
+        stringr::str_detect(地區,"[高南嘉屏澎]") ~ "南部",
+        TRUE ~ "東部" # 其他
+      )
+  ) -> electionKmtWithRegions
+```
+
+```{r}
+View(electionKmtWithRegions)
+```
+
+```{r}
+ggfacet_base_regional <- function(Xdata){
+  ggplot(
+    data=Xdata,
+    aes(
+      x=地區, 
+      y=得票率,
+      fill=region
+    )
+  ) +
+  geom_col() +
+  coord_flip()
+}
+```
+
+```{r}
+electionKmtWithRegions %>%
+  ggfacet_base_regional() +
+  facet_grid(
+    rows=vars(region),
+    scales="free_y",
+    space="free_y"
+  ) +
+  theme_classic()
+```
+
